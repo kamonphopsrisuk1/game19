@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full select-none">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>เกมรับผลไม้ - วิทยาการคำนวณ ป.4</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Itim & Kanit -->
+    <link href="https://fonts.googleapis.com/css2?family=Itim&family=Kanit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome v6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        itim: ['Itim', 'cursive', 'sans-serif'],
+                        kanit: ['Kanit', 'sans-serif']
+                    },
+                    colors: {
+                        brand: {
+                            purple: '#6366f1',
+                            yellow: '#f59e0b',
+                            rose: '#f43f5e',
+                            green: '#10b981'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * {
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        body {
+            font-family: 'Itim', 'Kanit', sans-serif;
+            background: linear-gradient(135deg, #e0e7ff 0%, #fef3c7 50%, #dcfce7 100%);
+            min-height: 100vh;
+        }
+        .kid-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border: 4px solid #ffffff;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
+            border-radius: 2rem;
+        }
+        .btn-kid {
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 0 rgba(0,0,0,0.15);
+        }
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+        }
+        canvas {
+            touch-action: none;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen justify-between p-3 sm:p-5 relative overflow-x-hidden">
+
+    <!-- Header Bar -->
+    <header class="w-full max-w-3xl mx-auto flex items-center justify-between bg-white/90 backdrop-blur rounded-2xl p-3 px-4 shadow-sm border-2 border-indigo-100 z-10 mb-2">
+        <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center text-xl shadow-md font-bold">
+                🍎
+            </div>
+            <div>
+                <h1 class="text-base sm:text-lg font-bold text-slate-800 leading-tight">เกมรับผลไม้ตัวจิ๋ว</h1>
+                <span class="text-xs text-indigo-600 font-semibold">วิทยาการคำนวณ ป.4</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Learning Concept Modal Trigger Button -->
+            <button onclick="openConceptModal()" class="btn-kid bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold text-xs sm:text-sm py-2 px-3 sm:px-4 rounded-xl flex items-center gap-1.5 border border-amber-300">
+                <span class="text-base">🧠</span>
+                <span class="hidden sm:inline">วิทยาการคำนวณ ป.4</span>
+                <span class="sm:hidden">ความรู้</span>
+            </button>
+
+            <!-- Mute/Unmute Audio -->
+            <button onclick="toggleAudio()" id="btn-audio" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-600 flex items-center justify-center text-sm transition">
+                <i class="fa-solid fa-volume-high"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN APPLICATION CONTAINER -->
+    <main class="flex-1 max-w-3xl w-full mx-auto my-auto flex flex-col justify-center items-center z-10 py-1">
+
+        <!-- GAME CONTAINER CARD -->
+        <div class="kid-card w-full p-4 sm:p-6 flex flex-col items-center relative overflow-hidden">
+
+            <!-- HUD Dashboard Stats (Variables) -->
+            <div class="w-full grid grid-cols-3 gap-2 mb-3 text-center font-black">
+                <div class="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-2 flex flex-col items-center">
+                    <span class="text-[11px] sm:text-xs text-indigo-500 font-bold uppercase">score (คะแนน)</span>
+                    <span id="ui-score" class="text-lg sm:text-2xl text-indigo-700">0</span>
+                </div>
+                <div class="bg-rose-50 border-2 border-rose-200 rounded-xl p-2 flex flex-col items-center">
+                    <span class="text-[11px] sm:text-xs text-rose-500 font-bold uppercase">lives (ชีวิต)</span>
+                    <span id="ui-lives" class="text-lg sm:text-2xl text-rose-600">❤️❤️❤️</span>
+                </div>
+                <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-2 flex flex-col items-center">
+                    <span class="text-[11px] sm:text-xs text-amber-600 font-bold uppercase">level (ด่าน)</span>
+                    <span id="ui-level" class="text-lg sm:text-2xl text-amber-600">1</span>
+                </div>
+            </div>
+
+            <!-- Canvas Viewport -->
+            <div class="relative w-full max-w-md aspect-[4/5] bg-sky-100 rounded-2xl overflow-hidden border-4 border-white shadow-inner">
+                <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+                <!-- Start / Game Over Overlay Screen -->
+                <div id="game-overlay" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center text-white z-20">
+                    <div id="overlay-icon" class="text-6xl mb-3 animate-bounce">🧺</div>
+                    <h2 id="overlay-title" class="text-2xl sm:text-3xl font-black mb-1">พร้อมหรือยัง?</h2>
+                    <p id="overlay-desc" class="text-xs sm:text-sm text-slate-200 mb-6 max-w-xs">
+                        ใช้ตะกร้ารับผลไม้ 🍎 เพื่อสะสมคะแนน และระวังระเบิด 💣 ด้วยนะ!
+                    </p>
+                    <button onclick="startGame()" class="btn-kid bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg px-8 py-3 rounded-2xl flex items-center gap-2 border-2 border-emerald-300">
+                        <i class="fa-solid fa-play"></i>
+                        <span id="overlay-btn-text">เริ่มเล่นเกม!</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Touch / Keyboard Controls Info -->
+            <div class="w-full max-w-md flex justify-between items-center mt-3 px-2 text-xs text-slate-500 font-bold">
+                <span><i class="fa-solid fa-keyboard mr-1"></i> ใช้ปุ่มลูกศร ◀️ ▶️</span>
+                <span><i class="fa-solid fa-hand-pointer mr-1"></i> ลากแตะบนหน้าจอ</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- CONCEPT MODAL (ตามรูปภาพต้นฉบับ) -->
+    <div id="concept-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-7 shadow-2xl border-4 border-indigo-200 max-h-[90vh] overflow-y-auto relative animate-pop-in">
+            
+            <!-- Close Icon -->
+            <button onclick="closeConceptModal()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-600 text-2xl font-bold">
+                ✖
+            </button>
+
+            <!-- Modal Header -->
+            <div class="flex items-center gap-3 mb-5 border-b-2 border-slate-100 pb-3">
+                <span class="text-3xl">🧠</span>
+                <h2 class="text-xl sm:text-2xl font-black text-indigo-700">วิทยาการคำนวณ ป.4 ในเกมนี้</h2>
+            </div>
+
+            <!-- Modal Contents -->
+            <div class="space-y-4 text-xs sm:text-sm text-slate-700">
+                
+                <!-- 1. Variables -->
+                <div class="bg-indigo-50 border border-indigo-100 p-3.5 sm:p-4 rounded-2xl">
+                    <h3 class="font-black text-indigo-900 text-sm sm:text-base flex items-center gap-1.5 mb-1">
+                        1. การใช้ตัวแปร (Variables) 📦
+                    </h3>
+                    <p class="text-slate-600 leading-relaxed">
+                        เกมใช้ตัวแปรเก็บข้อมูลที่เปลี่ยนแปลงตลอดเวลา เช่น 
+                        <code class="bg-white px-1.5 py-0.5 rounded border text-indigo-600 font-mono font-bold">score</code> (คะแนน), 
+                        <code class="bg-white px-1.5 py-0.5 rounded border text-rose-600 font-mono font-bold">lives</code> (ชีวิต), และ 
+                        <code class="bg-white px-1.5 py-0.5 rounded border text-amber-600 font-mono font-bold">level</code> (ด่าน)
+                    </p>
+                </div>
+
+                <!-- 2. Conditionals -->
+                <div class="bg-amber-50 border border-amber-100 p-3.5 sm:p-4 rounded-2xl">
+                    <h3 class="font-black text-amber-900 text-sm sm:text-base flex items-center gap-1.5 mb-2">
+                        2. การใช้เงื่อนไข (Conditionals: ถ้า...แล้ว...) 🔀
+                    </h3>
+                    <ul class="space-y-1.5 font-bold text-slate-700">
+                        <li class="flex items-start gap-1">
+                            <span>•</span>
+                            <span><strong>ถ้า</strong> ตะกร้าชนผลไม้ 🍎 ➔ <strong>แล้ว</strong> เพิ่มคะแนน +10</span>
+                        </li>
+                        <li class="flex items-start gap-1">
+                            <span>•</span>
+                            <span><strong>ถ้า</strong> ตะกร้าชนระเบิด 💣 ➔ <strong>แล้ว</strong> ลดชีวิต -1</span>
+                        </li>
+                        <li class="flex items-start gap-1">
+                            <span>•</span>
+                            <span><strong>ถ้า</strong> ชีวิตเหลือ 0 ➔ <strong>แล้ว</strong> จบเกม (Game Over)</span>
+                        </li>
+                        <li class="flex items-start gap-1">
+                            <span>•</span>
+                            <span><strong>ถ้า</strong> คะแนนเพิ่มครบทุก 50 คะแนน ➔ <strong>แล้ว</strong> เพิ่มระดับความยาก</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 3. Loop -->
+                <div class="bg-emerald-50 border border-emerald-100 p-3.5 sm:p-4 rounded-2xl">
+                    <h3 class="font-black text-emerald-900 text-sm sm:text-base flex items-center gap-1.5 mb-1">
+                        3. การทำซ้ำ (Loop) 🔄
+                    </h3>
+                    <p class="text-slate-600 leading-relaxed">
+                        เกมใช้ <strong>Loop</strong> ในการวาดภาพบนหน้าจอซ้ำ ๆ 60 ครั้งต่อวินาที (Game Loop) เพื่อให้วัตถุตกลงมาได้อย่างต่อเนื่องและนุ่มนวล
+                    </p>
+                </div>
+
+                <!-- 4. Collision Detection -->
+                <div class="bg-sky-50 border border-sky-100 p-3.5 sm:p-4 rounded-2xl">
+                    <h3 class="font-black text-sky-900 text-sm sm:text-base flex items-center gap-1.5 mb-1">
+                        4. การตรวจสอบการชน (Collision Detection) 💥
+                    </h3>
+                    <p class="text-slate-600 leading-relaxed">
+                        คอมพิวเตอร์คำนวณพิกัดตำแหน่ง (X, Y) ของตะกร้าและผลไม้ หากตำแหน่งซ้อนทับกัน ถือว่าจับผลไม้ได้!
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Modal Action Button -->
+            <button onclick="closeConceptModal()" class="w-full mt-5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-base py-3 px-6 rounded-2xl border-2 border-indigo-400 shadow-md flex items-center justify-center gap-2">
+                <span>เข้าใจแล้ว ไปลุยกันเลย!</span> 🚀
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT GAME ENGINE -->
+    <script>
+        // Web Audio Synthesizer
+        let audioEnabled = true;
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            const btn = document.getElementById('btn-audio');
+            if (audioEnabled) {
+                btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+                btn.classList.remove('opacity-50');
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+                btn.classList.add('opacity-50');
+            }
+        }
+
+        function playSound(type) {
+            if (!audioEnabled) return;
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+
+                if (type === 'catch') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.1); // A5
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'bomb') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.linearRampToValueAtTime(60, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'levelup') {
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        gain.gain.setValueAtTime(0.15, now + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.2);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.2);
+                    });
+                }
+            } catch(e) { console.log(e); }
+        }
+
+        // Modal Handlers
+        function openConceptModal() {
+            const modal = document.getElementById('concept-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        function closeConceptModal() {
+            const modal = document.getElementById('concept-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        // Game State Variables (Variables Concept)
+        let canvas, ctx;
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let isPlaying = false;
+        let animationFrameId = null;
+
+        // Basket Object (Player)
+        const basket = {
+            x: 0,
+            y: 0,
+            width: 80,
+            height: 50,
+            speed: 8,
+            emoji: '🧺'
+        };
+
+        // Falling Items Pool
+        let items = [];
+        const itemTypes = [
+            { emoji: '🍎', type: 'fruit', points: 10 },
+            { emoji: '🍌', type: 'fruit', points: 10 },
+            { emoji: '🍇', type: 'fruit', points: 10 },
+            { emoji: '🍊', type: 'fruit', points: 10 },
+            { emoji: '💣', type: 'bomb', points: 0 }
+        ];
+
+        let keys = { left: false, right: false };
+        let spawnTimer = 0;
+        let spawnInterval = 60; // Frames
+
+        // Initialization
+        window.onload = () => {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Controls Setup
+            setupControls();
+        };
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            basket.y = canvas.height - 60;
+            if (!isPlaying) {
+                basket.x = canvas.width / 2 - basket.width / 2;
+                drawScene();
+            }
+        }
+
+        function setupControls() {
+            // Keyboard Listener
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+                if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+            });
+            window.addEventListener('keyup', (e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+                if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+            });
+
+            // Touch & Mouse Dragging
+            let isDragging = false;
+            const handleMove = (clientX) => {
+                if (!isPlaying) return;
+                const rect = canvas.getBoundingClientRect();
+                const touchX = clientX - rect.left;
+                basket.x = touchX - basket.width / 2;
+                
+                // Clamp
+                if (basket.x < 0) basket.x = 0;
+                if (basket.x + basket.width > canvas.width) basket.x = canvas.width - basket.width;
+            };
+
+            canvas.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                handleMove(e.touches[0].clientX);
+            }, { passive: true });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (isDragging) handleMove(e.touches[0].clientX);
+            }, { passive: true });
+
+            canvas.addEventListener('touchend', () => isDragging = false);
+
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                handleMove(e.clientX);
+            });
+            canvas.addEventListener('mousemove', (e) => {
+                if (isDragging) handleMove(e.clientX);
+            });
+            window.addEventListener('mouseup', () => isDragging = false);
+        }
+
+        function updateUI() {
+            document.getElementById('ui-score').innerText = score;
+            document.getElementById('ui-level').innerText = level;
+            
+            let hearts = '';
+            for (let i = 0; i < lives; i++) hearts += '❤️';
+            document.getElementById('ui-lives').innerText = hearts || '💀';
+        }
+
+        function startGame() {
+            initAudio();
+            document.getElementById('game-overlay').classList.add('hidden');
+
+            score = 0;
+            lives = 3;
+            level = 1;
+            items = [];
+            spawnTimer = 0;
+            spawnInterval = 50;
+            basket.x = canvas.width / 2 - basket.width / 2;
+
+            updateUI();
+            isPlaying = true;
+
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            gameLoop(); // Start Game Loop
+        }
+
+        // Main Game Loop (Loop Concept - 60 FPS)
+        function gameLoop() {
+            if (!isPlaying) return;
+
+            updateGameLogic();
+            drawScene();
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function updateGameLogic() {
+            // Move Basket with Keys
+            if (keys.left) basket.x -= basket.speed + (level * 0.5);
+            if (keys.right) basket.x += basket.speed + (level * 0.5);
+
+            // Clamp Basket
+            if (basket.x < 0) basket.x = 0;
+            if (basket.x + basket.width > canvas.width) basket.x = canvas.width - basket.width;
+
+            // Spawn Falling Items
+            spawnTimer++;
+            if (spawnTimer >= spawnInterval) {
+                spawnTimer = 0;
+                
+                // Randomly select fruit or bomb
+                const isBomb = Math.random() < 0.25; // 25% chance for bomb
+                const itemType = isBomb 
+                    ? itemTypes.find(i => i.type === 'bomb') 
+                    : itemTypes[Math.floor(Math.random() * (itemTypes.length - 1))];
+
+                items.push({
+                    x: Math.random() * (canvas.width - 30),
+                    y: -30,
+                    size: 36,
+                    speed: 2.5 + (level * 0.8) + (Math.random() * 1.5),
+                    ...itemType
+                });
+            }
+
+            // Update Items Position & Collision Detection
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                item.y += item.speed;
+
+                // Collision Detection Logic (คำนวณพิกัด X, Y)
+                const isColliding = 
+                    item.x + item.size > basket.x &&
+                    item.x < basket.x + basket.width &&
+                    item.y + item.size > basket.y &&
+                    item.y < basket.y + basket.height;
+
+                // Conditionals (เงื่อนไข: ถ้า...แล้ว...)
+                if (isColliding) {
+                    if (item.type === 'fruit') {
+                        // ถ้า ชนผลไม้ -> คะแนน +10
+                        score += item.points;
+                        playSound('catch');
+
+                        // ถ้า คะแนนเพิ่มทุก 50 คะแนน -> เพิ่ม level
+                        if (score % 50 === 0 && score > 0) {
+                            level++;
+                            spawnInterval = Math.max(25, 50 - level * 3);
+                            playSound('levelup');
+                        }
+                    } else if (item.type === 'bomb') {
+                        // ถ้า ชนระเบิด -> ชีวิต -1
+                        lives--;
+                        playSound('bomb');
+
+                        // ถ้า ชีวิตเหลือ 0 -> จบเกม
+                        if (lives <= 0) {
+                            endGame();
+                            return;
+                        }
+                    }
+
+                    updateUI();
+                    items.splice(i, 1);
+                    continue;
+                }
+
+                // Remove out-of-screen items
+                if (item.y > canvas.height + 40) {
+                    items.splice(i, 1);
+                }
+            }
+        }
+
+        function drawScene() {
+            // Clear Background
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Decorative Grass/Ground
+            ctx.fillStyle = '#a7f3d0';
+            ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+
+            // Draw Basket (Player)
+            ctx.font = '42px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(basket.emoji, basket.x, basket.y - 5);
+
+            // Draw Items
+            items.forEach(item => {
+                ctx.font = `${item.size}px sans-serif`;
+                ctx.fillText(item.emoji, item.x, item.y);
+            });
+        }
+
+        function endGame() {
+            isPlaying = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            // Show Game Over Overlay
+            document.getElementById('overlay-icon').innerText = '💥';
+            document.getElementById('overlay-title').innerText = 'จบเกม (Game Over)';
+            document.getElementById('overlay-desc').innerText = `คุณทำคะแนนได้ทั้งหมด ${score} คะแนน ในระดับด่านที่ ${level}`;
+            document.getElementById('overlay-btn-text').innerText = 'เล่นอีกครั้ง!';
+            document.getElementById('game-overlay').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
